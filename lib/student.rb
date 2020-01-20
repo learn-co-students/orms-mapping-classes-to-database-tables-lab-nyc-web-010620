@@ -1,41 +1,33 @@
 class Student
-    attr_accessor :name, :grade
-  
+  attr_accessor :name, :grade
+  attr_reader :id
+
   def initialize(name, grade, id=nil)
-    @name = name 
+    @name = name
     @grade = grade
     @id = id
   end
 
-  def id
-    id = DB[:conn].execute("
-      SELECT id FROM students WHERE students.name = '#{self.name}';  
-    ").flatten
-
-    @id = id[0]
-  end
-
   def self.create_table
-    DB[:conn].execute("
-      CREATE TABLE students (
-        id INTEGER PRIMARY KEY, 
-        name TEXT, 
-        grade INTEGER
-      );
-    ")
+    sql = <<-SQL
+    CREATE TABLE students(
+      id INTEGER PRIMARY KEY,
+      name TEXT,
+      grade TEXT
+    );
+    SQL
+    DB[:conn].execute(sql)
   end
 
-   def self.drop_table
-    DB[:conn].execute("
-      DROP TABLE students;
-    ")
+  def self.drop_table
+    sql = "DROP TABLE #{self}s";
+    DB[:conn].execute(sql)
   end
 
-  def save 
-    DB[:conn].execute(" 
-      INSERT INTO students(name, grade)
-      VALUES ('#{self.name}', '#{self.grade}');
-    ")
+  def save
+    sql = "INSERT INTO students (name, grade) VALUES (?, ?)";
+    DB[:conn].execute(sql, self.name, self.grade)
+    @id = DB[:conn].execute("SELECT last_insert_rowid() FROM students")[0][0]
   end
 
   def self.create(name:, grade:)
@@ -43,4 +35,5 @@ class Student
     student.save
     student
   end
+    
 end
